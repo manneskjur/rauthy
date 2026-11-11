@@ -603,6 +603,7 @@ async fn test_authorization_code_flow() -> Result<(), Box<dyn Error>> {
         allowed_resources: None,
         default_aud: None,
         consent: None,
+        actor_same_client: false,
         scim: None,
     };
     let url_client = format!("{}/clients/{}", backend_url, CLIENT_ID);
