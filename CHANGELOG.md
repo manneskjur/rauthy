@@ -152,6 +152,10 @@ gets a `404` instead of succeeding a second time.
   a successful re-authentication, and it is dropped when that re-authentication is aborted, so an
   interrupted flow cannot trigger an action on a later, unrelated fetch.
   [#1846](https://github.com/sebadob/rauthy/issues/1846)
+- A login could revert a change to the same user that was made while the login was in progress,
+  e.g. a picture upload, because it saved the whole user as it was loaded before the password
+  hashing. Logins now only update `last_login`, `last_failed_login`, `failed_login_attempts`, and
+  the password hash when it gets upgraded.
 - Typing the activation code of an email OTP could send the activation twice, because the
   auto-submit that runs once the code has the expected length also re-ran on other changes. It now
   only runs when the code itself changes to a complete value, so each action sends a single request

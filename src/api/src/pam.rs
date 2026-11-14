@@ -640,7 +640,7 @@ pub async fn post_login(
     async fn pwd_login_fail(user: &mut User, err: ErrorResponse) -> Result<(), ErrorResponse> {
         user.last_failed_login = Some(Utc::now().timestamp());
         user.failed_login_attempts = Some(user.failed_login_attempts.unwrap_or(0) + 1);
-        user.save(None).await?;
+        user.update_login_state(false).await?;
 
         // Note: We don't want to increase the FailedLoginCounter for the IP here, because
         // this could be abused for DoS and block remote hosts with enough failed login attempts.
@@ -711,7 +711,7 @@ pub async fn post_login(
     user.last_login = Some(Utc::now().timestamp());
     user.last_failed_login = None;
     user.failed_login_attempts = None;
-    user.save(None).await?;
+    user.update_login_state(false).await?;
 
     info!("New PAM login for user {}", user.email);
 

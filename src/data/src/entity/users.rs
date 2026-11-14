@@ -1592,6 +1592,80 @@ LIMIT $2"#;
         Ok(())
     }
 
+    /// Updates only `last_login`, `last_failed_login` and `failed_login_attempts`, and with
+    /// `upd_password` the `password` as well. Unlike `save()`, this will not overwrite changes a
+    /// concurrent request did to any other column during a login.
+    pub async fn update_login_state(&self, upd_password: bool) -> Result<(), ErrorResponse> {
+        if upd_password {
+            let sql = r#"
+UPDATE users
+SET last_login = $1, last_failed_login = $2, failed_login_attempts = $3, password = $4
+WHERE id = $5"#;
+
+            if is_hiqlite() {
+                DB::hql()
+                    .execute(
+                        sql,
+                        params!(
+                            self.last_login,
+                            self.last_failed_login,
+                            self.failed_login_attempts,
+                            &self.password,
+                            &self.id
+                        ),
+                    )
+                    .await?;
+            } else {
+                DB::pg_execute(
+                    sql,
+                    &[
+                        &self.last_login,
+                        &self.last_failed_login,
+                        &self.failed_login_attempts,
+                        &self.password,
+                        &self.id,
+                    ],
+                )
+                .await?;
+            }
+        } else {
+            let sql = r#"
+UPDATE users
+SET last_login = $1, last_failed_login = $2, failed_login_attempts = $3
+WHERE id = $4"#;
+
+            if is_hiqlite() {
+                DB::hql()
+                    .execute(
+                        sql,
+                        params!(
+                            self.last_login,
+                            self.last_failed_login,
+                            self.failed_login_attempts,
+                            &self.id
+                        ),
+                    )
+                    .await?;
+            } else {
+                DB::pg_execute(
+                    sql,
+                    &[
+                        &self.last_login,
+                        &self.last_failed_login,
+                        &self.failed_login_attempts,
+                        &self.id,
+                    ],
+                )
+                .await?;
+            }
+        }
+
+        // `self` may be outdated in all other columns and must not be put into the cache
+        Self::invalidate_cache(&self.id, &self.email).await?;
+
+        Ok(())
+    }
+
     /// Updates a user from himself. This is needed for the account page to make each user able to
     /// update its own data.
     pub async fn update_self_req(

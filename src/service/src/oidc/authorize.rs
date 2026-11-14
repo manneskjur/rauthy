@@ -154,7 +154,7 @@ pub async fn post_authorize(
 
             user.last_failed_login = Some(Utc::now().timestamp());
             user.failed_login_attempts = Some(user.failed_login_attempts.unwrap_or_default() + 1);
-            user.save(None).await?;
+            user.update_login_state(false).await?;
 
             *user_failed_logins = user.failed_login_attempts;
 
@@ -171,7 +171,7 @@ pub async fn post_authorize(
         user.last_login = Some(Utc::now().timestamp());
         user.last_failed_login = None;
         user.failed_login_attempts = None;
-        user.save(None).await?;
+        user.update_login_state(false).await?;
     }
     // If the password was correct, we don't want a login delay anymore.
     // It should only prevent username enumeration and brute force, not degrade the UX.
